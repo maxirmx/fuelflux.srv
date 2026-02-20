@@ -1,0 +1,15 @@
+[Unit]
+Description=SIM800 PPP Connection (pppd call @TTY_DEVICE_BASENAME@)
+After=dev-@TTY_DEVICE_BASENAME@.device
+Requires=dev-@TTY_DEVICE_BASENAME@.device
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/pppd call @PPP_PEER@
+Restart=always
+RestartSec=5
+# Avoid systemd giving up after repeated failures
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=multi-user.target

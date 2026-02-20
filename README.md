@@ -1,0 +1,76 @@
+# SIM800 PPP -> AutoSSH (systemd) bundle
+
+This bundle installs two systemd services to enforce the startup sequence:
+
+`/dev/ttyS5` → `pppd call sim800` → `autossh` tunnel
+
+## What you get
+
+- `sim800.service`  
+  Starts and supervises `pppd call sim800`, and waits for `/dev/ttyS5` to exist.
+
+- `autossh-ppp.service`  
+  Starts only after `sim800.service` is up, and (optionally) waits for `ppp0` to appear.
+
+- `install.sh`  
+  Copies units, applies your settings, enables and starts services.
+
+## Prerequisites
+
+- `pppd` installed
+- `autossh` installed
+- Your peer file exists at: `/etc/ppp/peers/sim800`
+  - This bundle includes a template you can copy if you want.
+
+On Debian/Armbian:
+
+```bash
+sudo apt update
+sudo apt install -y ppp autossh
+```
+
+## Install (recommended)
+
+1) Unpack on the device:
+
+```bash
+tar -xzf sim800_ppp_autossh_bundle.tar.gz
+cd sim800-ppp-autossh-bundle
+```
+
+2) Run installer (edit parameters as needed):
+
+```bash
+sudo ./install.sh \
+  --server user@example.com \
+  --remote-port 2222 \
+  --local-port 22 \
+  --tty /dev/ttyS5 \
+  --ppp-peer sim800
+```
+
+Notes:
+- The tunnel example uses a reverse tunnel `-R <remote-port>:localhost:<local-port>`.
+- If you prefer a local tunnel (`-L`) or dynamic (`-D`), edit the unit after install.
+
+## Status / logs
+
+```bash
+systemctl status sim800
+systemctl status autossh-ppp
+journalctl -u sim800 -b
+journalctl -u autossh-ppp -b
+ip addr show ppp0
+```
+
+## If you previously used /etc/rc.local
+
+Remove or comment out `pppd call sim800 &` to avoid duplicate `pppd` instances.
+
+## Files
+
+- `systemd/sim800.service`
+- `systemd/autossh-ppp.service`
+- `ppp/peers/sim800.template`
+- `install.sh`
+

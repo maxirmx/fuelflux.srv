@@ -1,0 +1,21 @@
+[Unit]
+Description=AutoSSH tunnel over PPP (after SIM800 PPP is up)
+After=sim800.service
+Requires=sim800.service
+
+[Service]
+Type=simple
+User=root
+Environment=AUTOSSH_GATETIME=0
+# Optional: wait for ppp0 to appear (30s max)
+ExecStartPre=/usr/bin/bash -c 'for i in {1..30}; do ip link show ppp0 >/dev/null 2>&1 && exit 0; sleep 1; done; echo "ppp0 not found" >&2; exit 1'
+ExecStart=/usr/bin/autossh -N \
+  -o "ServerAliveInterval=30" -o "ServerAliveCountMax=3" \
+  -o "ExitOnForwardFailure=yes" \
+  -R @REMOTE_PORT@:localhost:@LOCAL_PORT@ @SSH_USERHOST@
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=multi-user.target
