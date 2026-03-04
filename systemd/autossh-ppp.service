@@ -1,18 +1,35 @@
 [Unit]
-Description=AutoSSH tunnel over PPP (after SIM800 PPP is up)
-After=sim800.service
+Description=AutoSSH tunnel to kreel0
+After=sim800.service network-online.target
+Wants=network-online.target
 Requires=sim800.service
 
 [Service]
 Type=simple
 User=root
+
+# Important:
+# - AUTOSSH_GATETIME=0 => start monitoring immediately
+# - AUTOSSH_MAXSTART=0 => never stop after 3 failed starts (unlimited)
+# - AUTOSSH_POLL=10    => retry frequency in seconds (optional)
 Environment=AUTOSSH_GATETIME=0
-# Optional: wait for ppp0 to appear (30s max)
-ExecStartPre=/usr/bin/bash -c 'for i in {1..30}; do ip link show ppp0 >/dev/null 2>&1 && exit 0; sleep 1; done; echo "ppp0 not found" >&2; exit 1'
-ExecStart=/usr/bin/autossh -N \
-  -o "ServerAliveInterval=30" -o "ServerAliveCountMax=3" \
-  -o "ExitOnForwardFailure=yes" \
-  -R @REMOTE_PORT@:localhost:@LOCAL_PORT@ @SSH_USERHOST@
+Environment=AUTOSSH_MAXSTART=1024
+Environment=AUTOSSH_POLL=10
+
+# Wait for ppp0 to exist and to have an IP (more robust than "link show")
+ExecStartPre=/usr/bin/bash -lc 'for i in {1..60}; do ping -I ppp0 -c1 -W2 kreel0.sw.consulting 2>&1 && exit 0; sleep 2; done; echo "PPP cannot reach kreel0" >&2; exit 1'
+
+# -M 0 disables the extra autossh monitor port (best when you already use ServerAlive*)
+# Use a single, clean ExecStart line to avoid quoting surprises.
+ExecStart=/usr/bin/autossh -M 0 -N \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=2 \
+  -o TCPKeepAlive=yes \
+  -o ExitOnForwardFailure=yes \
+  -o StrictHostKeyChecking=accept-new \
+  -R @REMOTE_PORT@:localhost:@LOCAL_PORT@ \
+  @SSH_USERHOST@
+
 Restart=always
 RestartSec=10
 StartLimitIntervalSec=0
