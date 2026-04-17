@@ -2,7 +2,7 @@
 # Adjust device and chat scripts to your setup.
 #
 
-/dev/ttyS5
+@TTY_DEVICE@
 115200
 
 # FLOW CONTROL — start WITHOUT it

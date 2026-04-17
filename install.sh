@@ -94,17 +94,8 @@ if ! PEER_TMP="$(mktemp)"; then
   echo "ERROR: failed to create temporary file with mktemp (check /tmp permissions and free space)." >&2
   exit 1
 fi
-awk -v tty="$TTY" '
-  BEGIN { replaced = 0 }
-  {
-    if (!replaced && $0 == "/dev/ttyS5") {
-      print tty
-      replaced = 1
-      next
-    }
-    print
-  }
-' "ppp/peers/sim800.template" > "$PEER_TMP"
+TTY_ESCAPED="$(printf '%s' "$TTY" | sed -e 's/[&|]/\\&/g')"
+sed -e "s|@TTY_DEVICE@|${TTY_ESCAPED}|g" "ppp/peers/sim800.template" > "$PEER_TMP"
 install -m 0644 "$PEER_TMP" "/etc/ppp/peers/sim800"
 
 echo "[3/7] Installing chat script"
