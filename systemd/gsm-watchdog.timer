@@ -1,9 +1,12 @@
 [Unit]
-Description=Run GSM watchdog every 30 seconds
+Description=Run GSM watchdog every 60 seconds
+Requires=sim800.service
+After=sim800.service
+PartOf=sim800.service
 
 [Timer]
-OnBootSec=30
-OnUnitActiveSec=30
+OnBootSec=60
+OnUnitActiveSec=60
 
 [Install]
 WantedBy=timers.target

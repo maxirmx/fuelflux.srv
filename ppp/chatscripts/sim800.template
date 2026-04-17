@@ -12,7 +12,7 @@ OK ATE0
 
 # --- HARD RESET (does not work even with TIMEOUT 45) ---
 #OK AT+CFUN=1,1
-#TIMEOUT 15
+TIMEOUT 60
 #"" AT
 
 # --- CLEAN GPRS STATE ---
