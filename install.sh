@@ -93,7 +93,11 @@ if ! PEER_TMP="$(mktemp)"; then
   echo "ERROR: failed to create temporary file with mktemp (check TMPDIR/tmp permissions and free space)." >&2
   exit 1
 fi
-python3 - "$TTY" "ppp/peers/sim800.template" > "$PEER_TMP" <<'PY'
+if [[ ! -r "ppp/peers/sim800.template" ]]; then
+  echo "ERROR: PPP peer template not found or unreadable: ppp/peers/sim800.template" >&2
+  exit 1
+fi
+if ! python3 - "$TTY" "ppp/peers/sim800.template" > "$PEER_TMP" <<'PY'
 import sys
 
 tty = sys.argv[1]
@@ -102,6 +106,10 @@ template_path = sys.argv[2]
 with open(template_path, encoding="utf-8") as f:
     print(f.read().replace("@TTY_DEVICE@", tty), end="")
 PY
+then
+  echo "ERROR: failed to render PPP peer file from template." >&2
+  exit 1
+fi
 install -m 0644 "$PEER_TMP" "/etc/ppp/peers/sim800"
 rm -f "$PEER_TMP"
 
