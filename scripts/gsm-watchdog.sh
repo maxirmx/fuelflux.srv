@@ -3,7 +3,7 @@
 DEV=/dev/ttyS5
 IF=ppp0
 
-# Use Yandex DNS (stable + reachable in your region)
+# Connectivity target IP (change if needed for your environment)
 TARGET=77.88.8.8
 
 STATE_FILE=/run/gsm-watchdog.state
@@ -30,7 +30,7 @@ if ! ip link show "$IF" > /dev/null 2>&1; then
 fi
 
 # --- 2. PPP has IP ---
-IP=$(ip -4 addr show "$IF" | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+IP=$(ip -4 -o addr show "$IF" | awk '{print $4}' | cut -d/ -f1 | head -n 1)
 if [ -z "$IP" ]; then
     log "PPP no IP (fail $FAILS/$MAX_FAILS)"
     echo "$FAILS" > "$STATE_FILE"
@@ -49,14 +49,19 @@ fi
 
 # --- 4. Optional modem check (non-invasive) ---
 # Only check if everything else is OK
-echo -e "AT\r" > "$DEV"
-REPLY=$(timeout 2 cat "$DEV" | head -n 1)
+LOCK_FILE="/var/lock/LCK..$(basename "$DEV")"
+if [ -e "$LOCK_FILE" ]; then
+    log "Skipping modem AT check: lock file present ($LOCK_FILE)"
+else
+    echo -e "AT\r" > "$DEV"
+    REPLY=$(timeout 2 cat "$DEV" | head -n 1)
 
-if [[ "$REPLY" != *"OK"* ]]; then
-    log "SIM800 not responding (fail $FAILS/$MAX_FAILS)"
-    echo "$FAILS" > "$STATE_FILE"
-    [ "$FAILS" -ge "$MAX_FAILS" ] && systemctl restart sim800
-    exit 1
+    if [[ "$REPLY" != *"OK"* ]]; then
+        log "SIM800 not responding (fail $FAILS/$MAX_FAILS)"
+        echo "$FAILS" > "$STATE_FILE"
+        [ "$FAILS" -ge "$MAX_FAILS" ] && systemctl restart sim800
+        exit 1
+    fi
 fi
 
 # --- SUCCESS ---
