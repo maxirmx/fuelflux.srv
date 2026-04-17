@@ -23,7 +23,7 @@ Example:
 
 Notes:
 - If you previously used /etc/rc.local to start pppd, disable/remove that line to avoid duplicates.
-- This script installs ppp/peers/sim800.template to /etc/ppp/peers/sim800.
+- This script installs ppp/peers/sim800.template to /etc/ppp/peers/<ppp-peer> (default: /etc/ppp/peers/sim800).
 EOF
 }
 
