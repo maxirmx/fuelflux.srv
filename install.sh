@@ -97,11 +97,11 @@ chmod 0644 "$SIM800_DST" "$AUTOSSH_DST"
 echo "[2/7] Installing PPP peer file"
 install -d "/etc/ppp/peers"
 PEER_TMP="$(mktemp)"
+trap 'rm -f "$PEER_TMP"' EXIT
 sed \
   -e "s|/etc/chatscripts/sim800|/etc/chatscripts/${PPP_PEER}|g" \
   "ppp/peers/sim800.template" > "$PEER_TMP"
 install -m 0644 "$PEER_TMP" "/etc/ppp/peers/${PPP_PEER}"
-rm -f "$PEER_TMP"
 
 echo "[3/7] Installing chat script"
 install -d "/etc/chatscripts"
