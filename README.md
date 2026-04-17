@@ -10,7 +10,7 @@ This bundle installs two systemd services to enforce the startup sequence:
   Starts and supervises `pppd call sim800`, and waits for `/dev/ttyS5` to exist.
 
 - `autossh-ppp.service`  
-  Starts only after `sim800.service` is up, and (optionally) waits for `ppp0` to appear.
+  Starts only after `sim800.service` is up, is bound to `sim800.service`, and waits for an IPv4 address on `ppp0`.
 
 - `gsm-watchdog.service` + `gsm-watchdog.timer`  
   Runs every 30 seconds, checks `ppp0` + basic connectivity + modem AT response, and restarts `sim800` after 3 consecutive failures.
