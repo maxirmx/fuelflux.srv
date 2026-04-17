@@ -11,11 +11,11 @@ TIMEOUT 10
 OK ATE0
 
 # --- HARD RESET ---
-OK AT+CFUN=1,1
+#OK AT+CFUN=1,1
 
 # wait for reboot (~8–10s)
-TIMEOUT 45
-"" AT
+#TIMEOUT 45
+#"" AT
 
 # --- CLEAN ATTACH ---
 OK AT+CGATT=1
