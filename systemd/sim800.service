@@ -1,5 +1,5 @@
 [Unit]
-Description=SIM800 PPP Connection (pppd call @TTY_DEVICE_BASENAME@)
+Description=SIM800 PPP Connection (pppd call sim800 via @TTY_DEVICE_BASENAME@)
 After=dev-@TTY_DEVICE_BASENAME@.device
 Requires=dev-@TTY_DEVICE_BASENAME@.device
 

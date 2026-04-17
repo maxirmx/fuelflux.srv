@@ -52,6 +52,7 @@ sudo ./install.sh \
 
 Notes:
 - The tunnel example uses a reverse tunnel `-R <remote-port>:localhost:<local-port>`.
+- `--tty` configures both sim800.service device dependency and the installed `/etc/ppp/peers/sim800` device line.
 - If you prefer a local tunnel (`-L`) or dynamic (`-D`), edit the unit after install.
 
 ## Status / logs

@@ -22,6 +22,7 @@ Example:
 
 Notes:
 - If you previously used /etc/rc.local to start pppd, disable/remove that line to avoid duplicates.
+- `--tty` is used for both the sim800.service device dependency and `/etc/ppp/peers/sim800`.
 - This script installs ppp/peers/sim800.template to /etc/ppp/peers/sim800.
 - This script installs ppp/chatscripts/sim800.template to /etc/chatscripts/sim800.
 EOF
@@ -87,7 +88,24 @@ chmod 0644 "$SIM800_DST" "$AUTOSSH_DST"
 
 echo "[2/7] Installing PPP peer file"
 install -d "/etc/ppp/peers"
-install -m 0644 "ppp/peers/sim800.template" "/etc/ppp/peers/sim800"
+PEER_TMP=""
+trap '[ -n "$PEER_TMP" ] && rm -f "$PEER_TMP"' EXIT
+if ! PEER_TMP="$(mktemp)"; then
+  echo "ERROR: failed to create temporary file with mktemp (check /tmp permissions and free space)." >&2
+  exit 1
+fi
+awk -v tty="$TTY" '
+  BEGIN { replaced = 0 }
+  {
+    if (!replaced && $0 == "/dev/ttyS5") {
+      print tty
+      replaced = 1
+      next
+    }
+    print
+  }
+' "ppp/peers/sim800.template" > "$PEER_TMP"
+install -m 0644 "$PEER_TMP" "/etc/ppp/peers/sim800"
 
 echo "[3/7] Installing chat script"
 install -d "/etc/chatscripts"
