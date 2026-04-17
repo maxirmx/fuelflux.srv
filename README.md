@@ -12,8 +12,11 @@ This bundle installs two systemd services to enforce the startup sequence:
 - `autossh-ppp.service`  
   Starts only after `sim800.service` is up, and (optionally) waits for `ppp0` to appear.
 
+- `gsm-watchdog.service` + `gsm-watchdog.timer`  
+  Runs every 30 seconds, checks `ppp0` + basic connectivity + modem AT response, and restarts `sim800` after 3 consecutive failures.
+
 - `install.sh`  
-  Copies units, applies your settings, enables and starts services.
+  Copies units and watchdog script, applies your settings, enables and starts services.
 
 ## Prerequisites
 
@@ -60,6 +63,8 @@ Notes:
 ```bash
 systemctl status sim800
 systemctl status autossh-ppp
+journalctl -u gsm-watchdog -b
+journalctl -u gsm-watchdog.timer -b
 journalctl -u sim800 -b
 journalctl -u autossh-ppp -b
 ip addr show ppp0
@@ -73,6 +78,9 @@ Remove or comment out `pppd call sim800 &` to avoid duplicate `pppd` instances.
 
 - `systemd/sim800.service`
 - `systemd/autossh-ppp.service`
+- `systemd/gsm-watchdog.service`
+- `systemd/gsm-watchdog.timer`
+- `scripts/gsm-watchdog.sh`
 - `ppp/peers/sim800.template`
 - `ppp/chatscripts/sim800.template`
 - `install.sh`
