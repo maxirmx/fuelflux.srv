@@ -98,7 +98,10 @@ echo "[2/7] Installing PPP peer file"
 install -d "/etc/ppp/peers"
 PEER_TMP=""
 trap '[ -n "${PEER_TMP:-}" ] && rm -f "$PEER_TMP"' EXIT
-PEER_TMP="$(mktemp)"
+if ! PEER_TMP="$(mktemp)"; then
+  echo "ERROR: failed to create temporary file." >&2
+  exit 1
+fi
 sed \
   -e "s|/etc/chatscripts/sim800|/etc/chatscripts/${PPP_PEER}|g" \
   "ppp/peers/sim800.template" > "$PEER_TMP"
