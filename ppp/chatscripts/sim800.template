@@ -10,14 +10,13 @@ TIMEOUT 10
 "" AT
 OK ATE0
 
-# --- HARD RESET ---
+# --- HARD RESET (does not work even with TIMEOUT 45) ---
 #OK AT+CFUN=1,1
-
-# wait for reboot (~8–10s)
-#TIMEOUT 45
+#TIMEOUT 15
 #"" AT
 
-# --- CLEAN ATTACH ---
+# --- CLEAN GPRS STATE ---
+OK AT+CGATT=0
 OK AT+CGATT=1
 
 # --- APN ---
