@@ -62,7 +62,7 @@ if [[ ! "$REMOTE_PORT" =~ ^[0-9]+$ || ! "$LOCAL_PORT" =~ ^[0-9]+$ ]]; then
 fi
 
 if [[ ! "$PPP_PEER" =~ ^[A-Za-z0-9._-]+$ ]]; then
-  echo "ERROR: --ppp-peer must match [A-Za-z0-9._-]+." >&2
+  echo "ERROR: --ppp-peer must contain only letters, numbers, dots, underscores, and hyphens." >&2
   exit 2
 fi
 
