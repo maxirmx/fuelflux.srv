@@ -14,7 +14,7 @@ OK ATE0
 OK AT+CFUN=1,1
 
 # wait for reboot (~8–10s)
-TIMEOUT 15
+TIMEOUT 45
 "" AT
 
 # --- CLEAN ATTACH ---
