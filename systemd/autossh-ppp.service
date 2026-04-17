@@ -9,6 +9,10 @@ PartOf=sim800.service
 Type=simple
 User=root
 
+# Important:
+# - AUTOSSH_GATETIME=0 => start monitoring immediately
+# - AUTOSSH_MAXSTART=0 => never stop after 3 failed starts (unlimited)
+# - AUTOSSH_POLL=10    => retry frequency in seconds (optional)
 Environment=AUTOSSH_GATETIME=0
 Environment=AUTOSSH_MAXSTART=1024
 Environment=AUTOSSH_POLL=10
