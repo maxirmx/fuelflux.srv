@@ -1,0 +1,6 @@
+[Unit]
+Description=GSM Watchdog
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/gsm-watchdog.sh
