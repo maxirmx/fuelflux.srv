@@ -89,14 +89,14 @@ chmod 0644 "$SIM800_DST" "$AUTOSSH_DST"
 echo "[2/7] Installing PPP peer file"
 install -d "/etc/ppp/peers"
 PEER_TMP=""
-trap '[ -n "$PEER_TMP" ] && rm -f "$PEER_TMP"' EXIT
 if ! PEER_TMP="$(mktemp)"; then
   echo "ERROR: failed to create temporary file with mktemp (check /tmp permissions and free space)." >&2
   exit 1
 fi
-TTY_ESCAPED="$(printf '%s' "$TTY" | sed -e 's/[&|]/\\&/g')"
+TTY_ESCAPED="$(printf '%s' "$TTY" | sed -e 's/[&/\\|]/\\&/g')"
 sed -e "s|@TTY_DEVICE@|${TTY_ESCAPED}|g" "ppp/peers/sim800.template" > "$PEER_TMP"
 install -m 0644 "$PEER_TMP" "/etc/ppp/peers/sim800"
+rm -f "$PEER_TMP"
 
 echo "[3/7] Installing chat script"
 install -d "/etc/chatscripts"
