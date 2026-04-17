@@ -93,8 +93,9 @@ if ! PEER_TMP="$(mktemp)"; then
   echo "ERROR: failed to create temporary file with mktemp (check /tmp permissions and free space)." >&2
   exit 1
 fi
-TTY_ESCAPED="$(printf '%s' "$TTY" | sed -e 's/[&/\\|]/\\&/g')"
-sed -e "s|@TTY_DEVICE@|${TTY_ESCAPED}|g" "ppp/peers/sim800.template" > "$PEER_TMP"
+while IFS= read -r line || [[ -n "$line" ]]; do
+  printf '%s\n' "${line//@TTY_DEVICE@/$TTY}"
+done < "ppp/peers/sim800.template" > "$PEER_TMP"
 install -m 0644 "$PEER_TMP" "/etc/ppp/peers/sim800"
 rm -f "$PEER_TMP"
 
