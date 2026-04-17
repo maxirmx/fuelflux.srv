@@ -21,6 +21,8 @@ This bundle installs two systemd services to enforce the startup sequence:
 - `autossh` installed
 - Installer writes peer file to: `/etc/ppp/peers/<ppp-peer>` (default: `/etc/ppp/peers/sim800`)
   - Source template: `ppp/peers/sim800.template`
+- Installer writes chat script to: `/etc/chatscripts/<ppp-peer>` (default: `/etc/chatscripts/sim800`)
+  - Source template: `ppp/chatscripts/sim800.template`
 
 On Debian/Armbian:
 
@@ -72,4 +74,5 @@ Remove or comment out `pppd call sim800 &` to avoid duplicate `pppd` instances.
 - `systemd/sim800.service`
 - `systemd/autossh-ppp.service`
 - `ppp/peers/sim800.template`
+- `ppp/chatscripts/sim800.template`
 - `install.sh`

@@ -1,0 +1,30 @@
+ABORT "BUSY"
+ABORT "NO CARRIER"
+ABORT "NO DIALTONE"
+ABORT "NO ANSWER"
+ABORT "ERROR"
+REPORT CONNECT
+
+TIMEOUT 10
+
+"" AT
+OK ATE0
+
+# --- HARD RESET ---
+OK AT+CFUN=1,1
+
+# wait for reboot (~8–10s)
+TIMEOUT 15
+"" AT
+
+# --- CLEAN ATTACH ---
+OK AT+CGATT=1
+
+# --- APN ---
+OK AT+CGDCONT=1,"IP","internet"
+
+# --- DIAL ---
+TIMEOUT 60
+OK ATD*99***1#
+
+CONNECT ""
