@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+cleanup_peer_tmp() {
+  if [[ -n "${PEER_TMP:-}" ]]; then
+    rm -f "$PEER_TMP"
+  fi
+}
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -93,6 +99,7 @@ if ! PEER_TMP="$(mktemp)"; then
   echo "ERROR: failed to create temporary file with mktemp (check TMPDIR/tmp permissions and free space)." >&2
   exit 1
 fi
+trap cleanup_peer_tmp EXIT
 if [[ ! -r "ppp/peers/sim800.template" ]]; then
   echo "ERROR: PPP peer template not found or unreadable: ppp/peers/sim800.template" >&2
   exit 1
@@ -107,11 +114,12 @@ with open(template_path, encoding="utf-8") as f:
     print(f.read().replace("@TTY_DEVICE@", tty), end="")
 PY
 then
-  echo "ERROR: failed to render PPP peer file from template." >&2
+  echo "ERROR: failed to render PPP peer file from template (check python3 availability and template content)." >&2
   exit 1
 fi
 install -m 0644 "$PEER_TMP" "/etc/ppp/peers/sim800"
-rm -f "$PEER_TMP"
+cleanup_peer_tmp
+trap - EXIT
 
 echo "[3/7] Installing chat script"
 install -d "/etc/chatscripts"
