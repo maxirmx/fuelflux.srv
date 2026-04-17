@@ -3,6 +3,7 @@ Description=AutoSSH tunnel to kreel0
 After=sim800.service
 Requires=sim800.service
 BindsTo=sim800.service
+PartOf=sim800.service
 
 [Service]
 Type=simple
