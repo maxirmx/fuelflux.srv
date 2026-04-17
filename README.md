@@ -19,7 +19,7 @@ This bundle installs two systemd services to enforce the startup sequence:
 
 - `pppd` installed
 - `autossh` installed
-- Installer writes peer file to: `/etc/ppp/peers/sim800`
+- Installer writes peer file to: `/etc/ppp/peers/<ppp-peer>` (default: `/etc/ppp/peers/sim800`)
   - Source template: `ppp/peers/sim800.template`
 
 On Debian/Armbian:
