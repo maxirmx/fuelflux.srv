@@ -97,9 +97,9 @@ chmod 0644 "$SIM800_DST" "$AUTOSSH_DST"
 echo "[2/7] Installing PPP peer file"
 install -d "/etc/ppp/peers"
 PEER_TMP=""
-trap '[ -n "${PEER_TMP:-}" ] && rm -f "$PEER_TMP"' EXIT
+trap '[ -n "$PEER_TMP" ] && rm -f "$PEER_TMP"' EXIT
 if ! PEER_TMP="$(mktemp)"; then
-  echo "ERROR: failed to create temporary file." >&2
+  echo "ERROR: failed to create temporary file with mktemp (check /tmp permissions and free space)." >&2
   exit 1
 fi
 sed \
