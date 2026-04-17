@@ -10,17 +10,22 @@ This bundle installs two systemd services to enforce the startup sequence:
   Starts and supervises `pppd call sim800`, and waits for `/dev/ttyS5` to exist.
 
 - `autossh-ppp.service`  
-  Starts only after `sim800.service` is up, and (optionally) waits for `ppp0` to appear.
+  Starts only after `sim800.service` is up, is bound to `sim800.service`, and waits for an IPv4 address on `ppp0`.
+
+- `gsm-watchdog.service` + `gsm-watchdog.timer`  
+  Runs every 30 seconds, checks `ppp0` + basic connectivity + modem AT response, and restarts `sim800` after 3 consecutive failures.
 
 - `install.sh`  
-  Copies units, applies your settings, enables and starts services.
+  Copies units and watchdog script, applies tunnel settings, enables and starts services.
 
 ## Prerequisites
 
 - `pppd` installed
 - `autossh` installed
-- Your peer file exists at: `/etc/ppp/peers/sim800`
-  - This bundle includes a template you can copy if you want.
+- Installer writes peer file to: `/etc/ppp/peers/sim800`
+  - Source template: `ppp/peers/sim800.template`
+- Installer writes chat script to: `/etc/chatscripts/sim800`
+  - Source template: `ppp/chatscripts/sim800.template`
 
 On Debian/Armbian:
 
@@ -44,9 +49,7 @@ cd sim800-ppp-autossh-bundle
 sudo ./install.sh \
   --server user@example.com \
   --remote-port 2222 \
-  --local-port 22 \
-  --tty /dev/ttyS5 \
-  --ppp-peer sim800
+  --local-port 22
 ```
 
 Notes:
@@ -58,6 +61,8 @@ Notes:
 ```bash
 systemctl status sim800
 systemctl status autossh-ppp
+journalctl -u gsm-watchdog -b
+journalctl -u gsm-watchdog.timer -b
 journalctl -u sim800 -b
 journalctl -u autossh-ppp -b
 ip addr show ppp0
@@ -71,6 +76,9 @@ Remove or comment out `pppd call sim800 &` to avoid duplicate `pppd` instances.
 
 - `systemd/sim800.service`
 - `systemd/autossh-ppp.service`
+- `systemd/gsm-watchdog.service`
+- `systemd/gsm-watchdog.timer`
+- `scripts/gsm-watchdog.sh`
 - `ppp/peers/sim800.template`
+- `ppp/chatscripts/sim800.template`
 - `install.sh`
-
