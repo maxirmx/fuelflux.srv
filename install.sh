@@ -90,7 +90,7 @@ chmod 0644 "$SIM800_DST" "$AUTOSSH_DST"
 
 echo "[2/6] Installing PPP peer file"
 install -d "/etc/ppp/peers"
-install -m 0644 "ppp/peers/sim800.template" "/etc/ppp/peers/sim800"
+install -m 0644 "ppp/peers/sim800.template" "/etc/ppp/peers/${PPP_PEER}"
 
 echo "[3/6] Reloading systemd"
 systemctl daemon-reload
