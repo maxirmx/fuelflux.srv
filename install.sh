@@ -24,6 +24,7 @@ Example:
 Notes:
 - If you previously used /etc/rc.local to start pppd, disable/remove that line to avoid duplicates.
 - This script installs ppp/peers/sim800.template to /etc/ppp/peers/<ppp-peer> (default: /etc/ppp/peers/sim800).
+- This script installs ppp/chatscripts/sim800.template to /etc/chatscripts/<ppp-peer> (default: /etc/chatscripts/sim800).
 EOF
 }
 
@@ -66,7 +67,7 @@ fi
 
 TTY_BASENAME="$(basename "$TTY")"
 
-echo "[1/6] Installing systemd units into: $UNIT_DIR"
+echo "[1/7] Installing systemd units into: $UNIT_DIR"
 install -d "$UNIT_DIR"
 
 # sim800.service
@@ -88,31 +89,38 @@ sed \
 
 chmod 0644 "$SIM800_DST" "$AUTOSSH_DST"
 
-echo "[2/6] Installing PPP peer file"
+echo "[2/7] Installing PPP peer file"
 install -d "/etc/ppp/peers"
-install -m 0644 "ppp/peers/sim800.template" "/etc/ppp/peers/${PPP_PEER}"
+sed \
+  -e "s|/etc/chatscripts/sim800|/etc/chatscripts/${PPP_PEER}|g" \
+  "ppp/peers/sim800.template" > "/etc/ppp/peers/${PPP_PEER}"
+chmod 0644 "/etc/ppp/peers/${PPP_PEER}"
 
-echo "[3/6] Reloading systemd"
+echo "[3/7] Installing chat script"
+install -d "/etc/chatscripts"
+install -m 0644 "ppp/chatscripts/sim800.template" "/etc/chatscripts/${PPP_PEER}"
+
+echo "[4/7] Reloading systemd"
 systemctl daemon-reload
 
-echo "[4/6] Enabling services"
+echo "[5/7] Enabling services"
 systemctl enable sim800.service
 systemctl enable autossh-ppp.service
 
-echo "[5/6] Showing unit summary"
+echo "[6/7] Showing unit summary"
 systemctl cat sim800.service | sed -n '1,120p' || true
 echo "----"
 systemctl cat autossh-ppp.service | sed -n '1,160p' || true
 
 if [[ "$NO_START" == "1" ]]; then
-  echo "[6/6] Skipping start (--no-start)."
+  echo "[7/7] Skipping start (--no-start)."
   echo "Done. Reboot or start manually:"
   echo "  systemctl start sim800"
   echo "  systemctl start autossh-ppp"
   exit 0
 fi
 
-echo "[6/6] Starting services"
+echo "[7/7] Starting services"
 systemctl restart sim800.service
 systemctl restart autossh-ppp.service
 
