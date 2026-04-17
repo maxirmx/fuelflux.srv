@@ -5,7 +5,7 @@ Requires=dev-@TTY_DEVICE_BASENAME@.device
 
 [Service]
 Type=forking
-ExecStart=/usr/sbin/pppd call @PPP_PEER@
+ExecStart=/usr/sbin/pppd call sim800
 Restart=always
 RestartSec=5
 # Avoid systemd giving up after repeated failures

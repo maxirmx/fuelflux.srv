@@ -13,23 +13,21 @@ Required:
 
 Options:
   --tty           Serial device (default: /dev/ttyS5)
-  --ppp-peer      PPP peer name for `pppd call <peer>` (default: sim800)
   --unit-dir      systemd unit dir (default: /etc/systemd/system)
   --no-start      Only install + enable, do not start services now
   --help          Show help
 
 Example:
-  sudo ./install.sh --server user@example.com --remote-port 2222 --local-port 22 --tty /dev/ttyS5 --ppp-peer sim800
+  sudo ./install.sh --server user@example.com --remote-port 2222 --local-port 22 --tty /dev/ttyS5
 
 Notes:
 - If you previously used /etc/rc.local to start pppd, disable/remove that line to avoid duplicates.
-- This script installs ppp/peers/sim800.template to /etc/ppp/peers/<ppp-peer> (default: /etc/ppp/peers/sim800).
-- This script installs ppp/chatscripts/sim800.template to /etc/chatscripts/<ppp-peer> (default: /etc/chatscripts/sim800).
+- This script installs ppp/peers/sim800.template to /etc/ppp/peers/sim800.
+- This script installs ppp/chatscripts/sim800.template to /etc/chatscripts/sim800.
 EOF
 }
 
 TTY="/dev/ttyS5"
-PPP_PEER="sim800"
 UNIT_DIR="/etc/systemd/system"
 NO_START="0"
 SSH_USERHOST=""
@@ -39,7 +37,6 @@ LOCAL_PORT=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --tty) TTY="$2"; shift 2;;
-    --ppp-peer) PPP_PEER="$2"; shift 2;;
     --unit-dir) UNIT_DIR="$2"; shift 2;;
     --server) SSH_USERHOST="$2"; shift 2;;
     --remote-port) REMOTE_PORT="$2"; shift 2;;
@@ -61,11 +58,6 @@ if [[ ! "$REMOTE_PORT" =~ ^[0-9]+$ || ! "$LOCAL_PORT" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
-if [[ ! "$PPP_PEER" =~ ^[A-Za-z0-9._-]+$ ]]; then
-  echo "ERROR: --ppp-peer must contain only letters, numbers, dots, underscores, and hyphens." >&2
-  exit 2
-fi
-
 if [[ ! -e "$TTY" ]]; then
   echo "WARNING: $TTY does not exist right now. That's OK at install time, but sim800.service will wait for it at boot." >&2
 fi
@@ -80,7 +72,6 @@ SIM800_SRC="systemd/sim800.service"
 SIM800_DST="$UNIT_DIR/sim800.service"
 sed \
   -e "s|@TTY_DEVICE_BASENAME@|${TTY_BASENAME}|g" \
-  -e "s|@PPP_PEER@|${PPP_PEER}|g" \
   "$SIM800_SRC" > "$SIM800_DST"
 
 # autossh-ppp.service
@@ -96,20 +87,11 @@ chmod 0644 "$SIM800_DST" "$AUTOSSH_DST"
 
 echo "[2/7] Installing PPP peer file"
 install -d "/etc/ppp/peers"
-PEER_TMP=""
-trap '[ -n "$PEER_TMP" ] && rm -f "$PEER_TMP"' EXIT
-if ! PEER_TMP="$(mktemp)"; then
-  echo "ERROR: failed to create temporary file with mktemp (check /tmp permissions and free space)." >&2
-  exit 1
-fi
-sed \
-  -e "s|/etc/chatscripts/sim800|/etc/chatscripts/${PPP_PEER}|g" \
-  "ppp/peers/sim800.template" > "$PEER_TMP"
-install -m 0644 "$PEER_TMP" "/etc/ppp/peers/${PPP_PEER}"
+install -m 0644 "ppp/peers/sim800.template" "/etc/ppp/peers/sim800"
 
 echo "[3/7] Installing chat script"
 install -d "/etc/chatscripts"
-install -m 0644 "ppp/chatscripts/sim800.template" "/etc/chatscripts/${PPP_PEER}"
+install -m 0644 "ppp/chatscripts/sim800.template" "/etc/chatscripts/sim800"
 
 echo "[4/7] Reloading systemd"
 systemctl daemon-reload
