@@ -90,12 +90,18 @@ echo "[2/7] Installing PPP peer file"
 install -d "/etc/ppp/peers"
 PEER_TMP=""
 if ! PEER_TMP="$(mktemp)"; then
-  echo "ERROR: failed to create temporary file with mktemp (check /tmp permissions and free space)." >&2
+  echo "ERROR: failed to create temporary file with mktemp (check TMPDIR/tmp permissions and free space)." >&2
   exit 1
 fi
-while IFS= read -r line || [[ -n "$line" ]]; do
-  printf '%s\n' "${line//@TTY_DEVICE@/$TTY}"
-done < "ppp/peers/sim800.template" > "$PEER_TMP"
+python3 - "$TTY" "ppp/peers/sim800.template" > "$PEER_TMP" <<'PY'
+import sys
+
+tty = sys.argv[1]
+template_path = sys.argv[2]
+
+with open(template_path, encoding="utf-8") as f:
+    print(f.read().replace("@TTY_DEVICE@", tty), end="")
+PY
 install -m 0644 "$PEER_TMP" "/etc/ppp/peers/sim800"
 rm -f "$PEER_TMP"
 
