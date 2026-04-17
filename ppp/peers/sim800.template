@@ -1,22 +1,55 @@
 # Template peer file for SIM800 (place at /etc/ppp/peers/sim800)
 # Adjust device and chat scripts to your setup.
 #
-# Example device (UART):
+
 /dev/ttyS5
 115200
-crtscts
+
+# FLOW CONTROL — start WITHOUT it
+nocrtscts
+
+# modem handling
+local
 modem
 lock
+
+# routing
 defaultroute
 usepeerdns
+replacedefaultroute
+
+# resilience
 persist
 maxfail 0
 holdoff 5
+
+# authentication
 noauth
-# If you use SIM PIN:
-# connect "/usr/sbin/chat -v -f /etc/chatscripts/sim800-connect"
-# disconnect "/usr/sbin/chat -v -f /etc/chatscripts/sim800-disconnect"
-#
-# Common for GSM:
-# lcp-echo-interval 10
-# lcp-echo-failure 3
+
+# GSM PPP
+noipdefault
+noipv6
+ipcp-accept-local
+ipcp-accept-remote
+ipcp-max-configure 30
+ipcp-max-failure 30
+ipcp-restart 3
+
+# disable problematic features
+novj
+novjccomp
+nobsdcomp
+nodeflate
+noccp
+
+
+# Keep alive
+lcp-echo-interval 15
+lcp-echo-failure 4
+
+
+# debugging
+debug
+logfile /var/log/ppp.log
+
+connect "/usr/sbin/chat -v -f /etc/chatscripts/sim800"
