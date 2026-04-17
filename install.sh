@@ -61,6 +61,11 @@ if [[ ! "$REMOTE_PORT" =~ ^[0-9]+$ || ! "$LOCAL_PORT" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
+if [[ ! "$PPP_PEER" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "ERROR: --ppp-peer must match [A-Za-z0-9._-]+." >&2
+  exit 2
+fi
+
 if [[ ! -e "$TTY" ]]; then
   echo "WARNING: $TTY does not exist right now. That's OK at install time, but sim800.service will wait for it at boot." >&2
 fi
@@ -91,10 +96,12 @@ chmod 0644 "$SIM800_DST" "$AUTOSSH_DST"
 
 echo "[2/7] Installing PPP peer file"
 install -d "/etc/ppp/peers"
+PEER_TMP="$(mktemp)"
 sed \
   -e "s|/etc/chatscripts/sim800|/etc/chatscripts/${PPP_PEER}|g" \
-  "ppp/peers/sim800.template" > "/etc/ppp/peers/${PPP_PEER}"
-chmod 0644 "/etc/ppp/peers/${PPP_PEER}"
+  "ppp/peers/sim800.template" > "$PEER_TMP"
+install -m 0644 "$PEER_TMP" "/etc/ppp/peers/${PPP_PEER}"
+rm -f "$PEER_TMP"
 
 echo "[3/7] Installing chat script"
 install -d "/etc/chatscripts"
