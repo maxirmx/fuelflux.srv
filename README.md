@@ -16,15 +16,15 @@ This bundle installs two systemd services to enforce the startup sequence:
   Runs every 30 seconds, checks `ppp0` + basic connectivity + modem AT response, and restarts `sim800` after 3 consecutive failures.
 
 - `install.sh`  
-  Copies units and watchdog script, applies your settings, enables and starts services.
+  Copies units and watchdog script, applies tunnel settings, enables and starts services.
 
 ## Prerequisites
 
 - `pppd` installed
 - `autossh` installed
-- Installer writes peer file to: `/etc/ppp/peers/<ppp-peer>` (default: `/etc/ppp/peers/sim800`)
+- Installer writes peer file to: `/etc/ppp/peers/sim800`
   - Source template: `ppp/peers/sim800.template`
-- Installer writes chat script to: `/etc/chatscripts/<ppp-peer>` (default: `/etc/chatscripts/sim800`)
+- Installer writes chat script to: `/etc/chatscripts/sim800`
   - Source template: `ppp/chatscripts/sim800.template`
 
 On Debian/Armbian:
@@ -49,9 +49,7 @@ cd sim800-ppp-autossh-bundle
 sudo ./install.sh \
   --server user@example.com \
   --remote-port 2222 \
-  --local-port 22 \
-  --tty /dev/ttyS5 \
-  --ppp-peer sim800
+  --local-port 22
 ```
 
 Notes:

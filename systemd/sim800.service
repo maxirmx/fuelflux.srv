@@ -1,11 +1,11 @@
 [Unit]
-Description=SIM800 PPP Connection (pppd call @TTY_DEVICE_BASENAME@)
-After=dev-@TTY_DEVICE_BASENAME@.device
-Requires=dev-@TTY_DEVICE_BASENAME@.device
+Description=SIM800 PPP Connection (pppd call sim800)
+After=dev-ttyS5.device
+Requires=dev-ttyS5.device
 
 [Service]
 Type=forking
-ExecStart=/usr/sbin/pppd call @PPP_PEER@
+ExecStart=/usr/sbin/pppd call sim800
 Restart=always
 RestartSec=5
 # Avoid systemd giving up after repeated failures
