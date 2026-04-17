@@ -23,7 +23,7 @@ Example:
 
 Notes:
 - If you previously used /etc/rc.local to start pppd, disable/remove that line to avoid duplicates.
-- This script does not overwrite /etc/ppp/peers/<peer>. A template is included under ppp/peers/.
+- This script installs ppp/peers/sim800.template to /etc/ppp/peers/sim800.
 EOF
 }
 
@@ -66,7 +66,7 @@ fi
 
 TTY_BASENAME="$(basename "$TTY")"
 
-echo "[1/5] Installing systemd units into: $UNIT_DIR"
+echo "[1/6] Installing systemd units into: $UNIT_DIR"
 install -d "$UNIT_DIR"
 
 # sim800.service
@@ -88,27 +88,31 @@ sed \
 
 chmod 0644 "$SIM800_DST" "$AUTOSSH_DST"
 
-echo "[2/5] Reloading systemd"
+echo "[2/6] Installing PPP peer file"
+install -d "/etc/ppp/peers"
+install -m 0644 "ppp/peers/sim800.template" "/etc/ppp/peers/sim800"
+
+echo "[3/6] Reloading systemd"
 systemctl daemon-reload
 
-echo "[3/5] Enabling services"
+echo "[4/6] Enabling services"
 systemctl enable sim800.service
 systemctl enable autossh-ppp.service
 
-echo "[4/5] Showing unit summary"
+echo "[5/6] Showing unit summary"
 systemctl cat sim800.service | sed -n '1,120p' || true
 echo "----"
 systemctl cat autossh-ppp.service | sed -n '1,160p' || true
 
 if [[ "$NO_START" == "1" ]]; then
-  echo "[5/5] Skipping start (--no-start)."
+  echo "[6/6] Skipping start (--no-start)."
   echo "Done. Reboot or start manually:"
   echo "  systemctl start sim800"
   echo "  systemctl start autossh-ppp"
   exit 0
 fi
 
-echo "[5/5] Starting services"
+echo "[6/6] Starting services"
 systemctl restart sim800.service
 systemctl restart autossh-ppp.service
 
