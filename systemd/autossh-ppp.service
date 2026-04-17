@@ -13,7 +13,7 @@ Environment=AUTOSSH_MAXSTART=1024
 Environment=AUTOSSH_POLL=10
 
 # Wait only for IP, not connectivity (max 30s to avoid blocking startup forever)
-ExecStartPre=/usr/bin/bash -lc 'for i in {1..30}; do ip -4 addr show ppp0 | grep -q inet && exit 0; sleep 1; done; echo "ppp0 has no IP" >&2; exit 1'
+ExecStartPre=/usr/bin/bash -c 'for i in {1..30}; do ip -4 addr show ppp0 | grep -q inet && exit 0; sleep 1; done; echo "ppp0 has no IP" >&2; exit 1'
 
 ExecStart=/usr/bin/autossh -M 0 -N \
   -o BindInterface=ppp0 \
