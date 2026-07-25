@@ -67,6 +67,7 @@ fi
 MISSING_PACKAGES=()
 [[ -x /usr/sbin/pppd ]] || MISSING_PACKAGES+=("ppp")
 [[ -x /usr/bin/autossh ]] || MISSING_PACKAGES+=("autossh")
+[[ -x /usr/sbin/resolvconf || -x /sbin/resolvconf ]] || MISSING_PACKAGES+=("resolvconf")
 
 if (( ${#MISSING_PACKAGES[@]} > 0 )); then
   if ! command -v apt-get >/dev/null 2>&1; then
@@ -74,14 +75,80 @@ if (( ${#MISSING_PACKAGES[@]} > 0 )); then
     exit 1
   fi
 
-  echo "[1/10] Installing dependencies: ${MISSING_PACKAGES[*]}"
+  echo "[1/11] Installing dependencies: ${MISSING_PACKAGES[*]}"
   apt-get update
   DEBIAN_FRONTEND=noninteractive apt-get install -y "${MISSING_PACKAGES[@]}"
 else
-  echo "[1/10] Dependencies already installed (ppp, autossh)"
+  echo "[1/11] Dependencies already installed (ppp, autossh, resolvconf)"
 fi
 
-echo "[2/10] Installing systemd units into: $UNIT_DIR"
+echo "[2/11] Configuring NetworkManager to use resolvconf"
+NETWORKMANAGER_CONFIG="/etc/NetworkManager/NetworkManager.conf"
+
+install -d -m 0755 "$(dirname "$NETWORKMANAGER_CONFIG")"
+NETWORKMANAGER_CONFIG_TMP="$(mktemp "${NETWORKMANAGER_CONFIG}.XXXXXX")"
+
+if [[ -f "$NETWORKMANAGER_CONFIG" ]]; then
+  awk '
+    BEGIN {
+      in_main = 0
+      main_seen = 0
+      setting_written = 0
+    }
+
+    function write_setting() {
+      if (in_main && !setting_written) {
+        print "rc-manager=resolvconf"
+        setting_written = 1
+      }
+    }
+
+    /^[[:space:]]*\[[^]]+\][[:space:]]*$/ {
+      write_setting()
+      in_main = ($0 ~ /^[[:space:]]*\[main\][[:space:]]*$/)
+      if (in_main) {
+        main_seen = 1
+      }
+      print
+      next
+    }
+
+    in_main && /^[[:space:]]*[#;]?[[:space:]]*rc-manager[[:space:]]*=/ {
+      if (!setting_written) {
+        print "rc-manager=resolvconf"
+        setting_written = 1
+      }
+      next
+    }
+
+    { print }
+
+    END {
+      write_setting()
+      if (!main_seen) {
+        if (NR > 0) {
+          print ""
+        }
+        print "[main]"
+        print "rc-manager=resolvconf"
+      }
+    }
+  ' "$NETWORKMANAGER_CONFIG" > "$NETWORKMANAGER_CONFIG_TMP"
+else
+  printf '[main]\nrc-manager=resolvconf\n' > "$NETWORKMANAGER_CONFIG_TMP"
+fi
+
+install -m 0644 "$NETWORKMANAGER_CONFIG_TMP" "$NETWORKMANAGER_CONFIG"
+rm -f "$NETWORKMANAGER_CONFIG_TMP"
+ln -sfn "/run/resolvconf/resolv.conf" "/etc/resolv.conf"
+
+if systemctl is-active --quiet NetworkManager.service; then
+  if ! systemctl reload NetworkManager.service; then
+    systemctl kill --kill-who=main --signal=HUP NetworkManager.service
+  fi
+fi
+
+echo "[3/11] Installing systemd units into: $UNIT_DIR"
 install -d "$UNIT_DIR"
 
 # sim800.service
@@ -108,27 +175,27 @@ install -m 0644 "$GSM_WATCHDOG_TIMER_SRC" "$GSM_WATCHDOG_TIMER_DST"
 
 chmod 0644 "$SIM800_DST" "$AUTOSSH_DST" "$GSM_WATCHDOG_SERVICE_DST" "$GSM_WATCHDOG_TIMER_DST"
 
-echo "[3/10] Installing GSM watchdog script"
+echo "[4/11] Installing GSM watchdog script"
 install -d "/usr/local/bin"
 install -m 0755 "scripts/gsm-watchdog.sh" "/usr/local/bin/gsm-watchdog.sh"
 
-echo "[4/10] Installing PPP peer file"
+echo "[5/11] Installing PPP peer file"
 install -d "/etc/ppp/peers"
 install -m 0644 "ppp/peers/sim800.template" "/etc/ppp/peers/sim800"
 
-echo "[5/10] Installing chat script"
+echo "[6/11] Installing chat script"
 install -d "/etc/chatscripts"
 install -m 0644 "ppp/chatscripts/sim800.template" "/etc/chatscripts/sim800"
 
-echo "[6/10] Reloading systemd"
+echo "[7/11] Reloading systemd"
 systemctl daemon-reload
 
-echo "[7/10] Enabling services"
+echo "[8/11] Enabling services"
 systemctl enable sim800.service
 systemctl enable autossh-ppp.service
 systemctl enable gsm-watchdog.timer
 
-echo "[8/10] Showing unit summary"
+echo "[9/11] Showing unit summary"
 systemctl cat sim800.service | sed -n '1,120p' || true
 echo "----"
 systemctl cat autossh-ppp.service | sed -n '1,160p' || true
@@ -138,7 +205,7 @@ echo "----"
 systemctl cat gsm-watchdog.timer | sed -n '1,120p' || true
 
 if [[ "$NO_START" == "1" ]]; then
-  echo "[9/10] Skipping start (--no-start)."
+  echo "[10/11] Skipping start (--no-start)."
   echo "Done. Reboot or start manually:"
   echo "  systemctl start sim800"
   echo "  systemctl start autossh-ppp"
@@ -146,12 +213,12 @@ if [[ "$NO_START" == "1" ]]; then
   exit 0
 fi
 
-echo "[9/10] Starting services"
+echo "[10/11] Starting services"
 systemctl restart sim800.service
 systemctl restart autossh-ppp.service
 systemctl restart gsm-watchdog.timer
 
-echo "[10/10] Completed installation"
+echo "[11/11] Completed installation"
 echo
 echo "Done."
 echo "Check status:"
