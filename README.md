@@ -20,14 +20,13 @@ This bundle installs two systemd services to enforce the startup sequence:
 
 ## Prerequisites
 
-- `pppd` installed
-- `autossh` installed
 - Installer writes peer file to: `/etc/ppp/peers/sim800`
   - Source template: `ppp/peers/sim800.template`
 - Installer writes chat script to: `/etc/chatscripts/sim800`
   - Source template: `ppp/chatscripts/sim800.template`
 
-On Debian/Armbian:
+On Debian/Armbian, `install.sh` automatically installs the `ppp` and `autossh`
+packages when they are missing. To install them manually instead:
 
 ```bash
 sudo apt update

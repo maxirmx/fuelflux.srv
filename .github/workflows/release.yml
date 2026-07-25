@@ -1,0 +1,75 @@
+name: Release bundle
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+env:
+  BUNDLE_NAME: sim800_ppp_autossh_bundle.tar.gz
+  BUNDLE_DIR: sim800-ppp-autossh-bundle
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6
+
+      - name: Validate semantic version tag
+        shell: bash
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' must use the vMAJOR.MINOR.PATCH format."
+            exit 1
+          fi
+
+      - name: Build bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          install -Dm755 install.sh "$BUNDLE_DIR/install.sh"
+          install -Dm644 README.md "$BUNDLE_DIR/README.md"
+          install -Dm644 LICENSE "$BUNDLE_DIR/LICENSE"
+          install -Dm644 systemd/sim800.service "$BUNDLE_DIR/systemd/sim800.service"
+          install -Dm644 systemd/autossh-ppp.service "$BUNDLE_DIR/systemd/autossh-ppp.service"
+          install -Dm644 systemd/gsm-watchdog.service "$BUNDLE_DIR/systemd/gsm-watchdog.service"
+          install -Dm644 systemd/gsm-watchdog.timer "$BUNDLE_DIR/systemd/gsm-watchdog.timer"
+          install -Dm755 scripts/gsm-watchdog.sh "$BUNDLE_DIR/scripts/gsm-watchdog.sh"
+          install -Dm644 ppp/peers/sim800.template "$BUNDLE_DIR/ppp/peers/sim800.template"
+          install -Dm644 ppp/chatscripts/sim800.template "$BUNDLE_DIR/ppp/chatscripts/sim800.template"
+
+          tar -czf "$BUNDLE_NAME" "$BUNDLE_DIR"
+
+      - name: Verify bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -tzf "$BUNDLE_NAME"
+          tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/install.sh" | bash -n
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$BUNDLE_NAME" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              "$BUNDLE_NAME#SIM800 PPP AutoSSH bundle" \
+              --title "$GITHUB_REF_NAME" \
+              --generate-notes \
+              --verify-tag
+          fi
