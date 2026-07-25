@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "$EUID" -ne 0 ]]; then
+  echo "ERROR: Please run as root (e.g. sudo ./install.sh --server user@host --remote-port 2222 --local-port 22)." >&2
+  exit 1
+fi
+
 usage() {
   cat <<'EOF'
 Usage:
