@@ -140,6 +140,15 @@ fi
 
 install -m 0644 "$NETWORKMANAGER_CONFIG_TMP" "$NETWORKMANAGER_CONFIG"
 rm -f "$NETWORKMANAGER_CONFIG_TMP"
+
+# Ensure resolvconf has created its runtime resolver before switching /etc/resolv.conf.
+if command -v resolvconf >/dev/null 2>&1; then
+  resolvconf -u
+fi
+if [[ ! -e "/run/resolvconf/resolv.conf" ]]; then
+  echo "ERROR: /run/resolvconf/resolv.conf not found after resolvconf -u; refusing to replace /etc/resolv.conf." >&2
+  exit 1
+fi
 ln -sfn "/run/resolvconf/resolv.conf" "/etc/resolv.conf"
 
 if systemctl is-active --quiet NetworkManager.service; then
