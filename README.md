@@ -19,6 +19,10 @@ This bundle installs systemd services for the following startup sequence:
   Binds a DS1307 at address `0x68` on I2C bus 3 and exposes `/dev/rtc1`
   as `/dev/rtc`.
 
+- `chrony.service`
+  Synchronizes system time from stable NTP sources, tolerates GSM latency,
+  and periodically copies synchronized system time back to the RTC.
+
 - `install.sh`  
   Installs dependencies, configures DNS resolution, copies units and the
   helper scripts, applies tunnel settings, and enables and starts services.
@@ -51,6 +55,28 @@ On the first service start, the setup script:
 This makes initialization safe on the first run: an RTC whose oscillator is
 stopped cannot overwrite the current system time. Later boots restore time
 from the running RTC.
+
+## Chrony and RTC startup order
+
+RTC setup runs before Chrony. This gives the system a plausible clock while
+offline; Chrony then corrects it when an NTP source becomes reachable. The
+Chrony dependency on `rtc-i2c.service` is soft, so an RTC failure does not
+prevent network time synchronization.
+
+The installed `/etc/chrony/chrony.conf` uses the VNIIFTRI, Russian NTP pool,
+and Ubuntu NTP pool sources from issue #8. It enables fast correction during
+the first three updates, permits higher GSM jitter, enables `rtcsync`, and
+writes logs under `/var/log/chrony`.
+
+After dependency installation, the installer verifies that both `chronyd` and
+`chronyc` are executable. On Debian/Ubuntu it also verifies that `dpkg`
+reports the `chrony` package as fully installed. Installation stops before
+configuration changes if any of these checks fail.
+
+The SIM800 PPP hooks add host routes for `77.88.8.88` and `77.88.8.2` through
+the active PPP interface. Chrony is restarted after those routes are installed
+and the routes are removed when that SIM800 connection goes down. The hooks
+are scoped by `ipparam sim800`, so they ignore unrelated PPP connections.
 
 ## Prerequisites
 
@@ -196,14 +222,18 @@ Notes:
 systemctl status sim800
 systemctl status autossh-ppp
 systemctl status rtc-i2c
+systemctl status chrony
 journalctl -u gsm-watchdog -b
 journalctl -u gsm-watchdog.timer -b
 journalctl -u sim800 -b
 journalctl -u autossh-ppp -b
 journalctl -u rtc-i2c -b
+journalctl -u chrony -b
 ip addr show ppp0
 ip -4 route show default
 hwclock -r -f /dev/rtc1
+chronyc tracking
+chronyc sources -v
 ```
 
 ## If you previously used /etc/rc.local
@@ -217,6 +247,10 @@ Remove or comment out `pppd call sim800 &` to avoid duplicate `pppd` instances.
 - `systemd/gsm-watchdog.service`
 - `systemd/gsm-watchdog.timer`
 - `systemd/rtc-i2c.service`
+- `systemd/chrony.service.d/10-rtc-i2c.conf`
+- `chrony/chrony.conf`
+- `scripts/chrony-ppp-down.sh`
+- `scripts/chrony-ppp-up.sh`
 - `scripts/gsm-watchdog.sh`
 - `scripts/rtc-i2c-setup.sh`
 - `scripts/sim800-route-down.sh`

@@ -30,6 +30,7 @@ Notes:
 - This script installs SIM800 route hooks under /etc/ppp/ip-{up,down}.d.
 - This script installs ppp/chatscripts/sim800.template to /etc/chatscripts/sim800.
 - This script installs and enables rtc-i2c.service for a DS1307 on I2C bus 3.
+- This script installs Chrony configuration and orders Chrony after RTC setup.
 EOF
 }
 
@@ -79,6 +80,7 @@ command -v hwclock >/dev/null 2>&1 || MISSING_PACKAGES+=("util-linux")
 if ! command -v i2cget >/dev/null 2>&1 || ! command -v i2cset >/dev/null 2>&1; then
   MISSING_PACKAGES+=("i2c-tools")
 fi
+command -v chronyd >/dev/null 2>&1 || MISSING_PACKAGES+=("chrony")
 
 if (( ${#MISSING_PACKAGES[@]} > 0 )); then
   if ! command -v apt-get >/dev/null 2>&1; then
@@ -90,8 +92,30 @@ if (( ${#MISSING_PACKAGES[@]} > 0 )); then
   apt-get update
   DEBIAN_FRONTEND=noninteractive apt-get install -y "${MISSING_PACKAGES[@]}"
 else
-  echo "[1/11] Dependencies already installed (ppp, autossh, resolvconf, iproute2, util-linux, i2c-tools)"
+  echo "[1/11] Dependencies already installed (ppp, autossh, resolvconf, iproute2, util-linux, i2c-tools, chrony)"
 fi
+
+CHRONYD_BIN="$(command -v chronyd || true)"
+CHRONYC_BIN="$(command -v chronyc || true)"
+if [[ -z "$CHRONYD_BIN" || ! -x "$CHRONYD_BIN" ]]; then
+  echo "ERROR: Chrony installation verification failed: chronyd is unavailable after dependency installation." >&2
+  exit 1
+fi
+if [[ -z "$CHRONYC_BIN" || ! -x "$CHRONYC_BIN" ]]; then
+  echo "ERROR: Chrony installation verification failed: chronyc is unavailable after dependency installation." >&2
+  exit 1
+fi
+
+if command -v dpkg-query >/dev/null 2>&1; then
+  CHRONY_PACKAGE_STATUS="$(dpkg-query -W -f='${Status}' chrony 2>/dev/null || true)"
+  if [[ "$CHRONY_PACKAGE_STATUS" != "install ok installed" ]]; then
+    echo "ERROR: Chrony installation verification failed: the chrony package is not installed correctly." >&2
+    exit 1
+  fi
+fi
+
+CHRONY_VERSION="$("$CHRONYD_BIN" -v)"
+echo "[1/11] Verified Chrony installation: $CHRONY_VERSION"
 
 echo "[2/11] Configuring NetworkManager to use resolvconf"
 NETWORKMANAGER_CONFIG="/etc/NetworkManager/NetworkManager.conf"
@@ -197,7 +221,13 @@ RTC_I2C_SRC="systemd/rtc-i2c.service"
 RTC_I2C_DST="$UNIT_DIR/rtc-i2c.service"
 install -m 0644 "$RTC_I2C_SRC" "$RTC_I2C_DST"
 
-chmod 0644 "$SIM800_DST" "$AUTOSSH_DST" "$GSM_WATCHDOG_SERVICE_DST" "$GSM_WATCHDOG_TIMER_DST" "$RTC_I2C_DST"
+CHRONY_DROPIN_SRC="systemd/chrony.service.d/10-rtc-i2c.conf"
+CHRONY_DROPIN_DIR="$UNIT_DIR/chrony.service.d"
+CHRONY_DROPIN_DST="$CHRONY_DROPIN_DIR/10-rtc-i2c.conf"
+install -d "$CHRONY_DROPIN_DIR"
+install -m 0644 "$CHRONY_DROPIN_SRC" "$CHRONY_DROPIN_DST"
+
+chmod 0644 "$SIM800_DST" "$AUTOSSH_DST" "$GSM_WATCHDOG_SERVICE_DST" "$GSM_WATCHDOG_TIMER_DST" "$RTC_I2C_DST" "$CHRONY_DROPIN_DST"
 
 echo "[4/11] Installing helper scripts"
 install -d "/usr/local/bin"
@@ -207,12 +237,15 @@ install -m 0755 "scripts/rtc-i2c-setup.sh" "/usr/local/bin/rtc-i2c-setup.sh"
 echo "[5/11] Installing PPP configuration"
 install -d "/etc/ppp/peers" "/etc/ppp/ip-up.d" "/etc/ppp/ip-down.d"
 install -m 0644 "ppp/peers/sim800.template" "/etc/ppp/peers/sim800"
+install -m 0755 "scripts/chrony-ppp-up.sh" "/etc/ppp/ip-up.d/10-chrony"
+install -m 0755 "scripts/chrony-ppp-down.sh" "/etc/ppp/ip-down.d/10-chrony"
 install -m 0755 "scripts/sim800-route-up.sh" "/etc/ppp/ip-up.d/90-sim800-route"
 install -m 0755 "scripts/sim800-route-down.sh" "/etc/ppp/ip-down.d/90-sim800-route"
 
-echo "[6/11] Installing chat script"
-install -d "/etc/chatscripts"
+echo "[6/11] Installing chat and Chrony configuration"
+install -d "/etc/chatscripts" "/etc/chrony"
 install -m 0644 "ppp/chatscripts/sim800.template" "/etc/chatscripts/sim800"
+install -m 0644 "chrony/chrony.conf" "/etc/chrony/chrony.conf"
 
 echo "[7/11] Reloading systemd"
 systemctl daemon-reload
@@ -222,6 +255,7 @@ systemctl enable sim800.service
 systemctl enable autossh-ppp.service
 systemctl enable gsm-watchdog.timer
 systemctl enable rtc-i2c.service
+systemctl enable chrony.service
 
 echo "[9/11] Showing unit summary"
 systemctl cat sim800.service | sed -n '1,120p' || true
@@ -233,19 +267,23 @@ echo "----"
 systemctl cat gsm-watchdog.timer | sed -n '1,120p' || true
 echo "----"
 systemctl cat rtc-i2c.service | sed -n '1,120p' || true
+echo "----"
+systemctl cat chrony.service | sed -n '1,200p' || true
 
 if [[ "$NO_START" == "1" ]]; then
   echo "[10/11] Skipping start (--no-start)."
   echo "Done. Reboot or start manually:"
+  echo "  systemctl start rtc-i2c"
+  echo "  systemctl start chrony"
   echo "  systemctl start sim800"
   echo "  systemctl start autossh-ppp"
   echo "  systemctl start gsm-watchdog.timer"
-  echo "  systemctl start rtc-i2c"
   exit 0
 fi
 
 echo "[10/11] Starting services"
 systemctl restart rtc-i2c.service
+systemctl restart chrony.service
 systemctl restart sim800.service
 systemctl restart autossh-ppp.service
 systemctl restart gsm-watchdog.timer
@@ -258,7 +296,9 @@ echo "  systemctl status sim800"
 echo "  systemctl status autossh-ppp"
 echo "  systemctl status gsm-watchdog.timer"
 echo "  systemctl status rtc-i2c"
+echo "  systemctl status chrony"
 echo "  journalctl -u gsm-watchdog -b"
 echo "  journalctl -u sim800 -b"
 echo "  journalctl -u autossh-ppp -b"
 echo "  journalctl -u rtc-i2c -b"
+echo "  journalctl -u chrony -b"
