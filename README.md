@@ -42,7 +42,9 @@ default route and remove it cleanly when PPP disconnects.
 ## RTC initialization and boot behavior
 
 The installer enables `rtc-i2c.service` and installs `i2c-tools` when needed.
-On the first service start, the setup script:
+The setup script first waits up to 10 seconds for `/dev/i2c-3`, which handles
+adapters that appear late during boot without requiring a systemd device unit.
+On the first service start, it then:
 
 1. Binds the `ds1307` driver to I2C bus 3 at address `0x68`.
 2. Waits for `/dev/rtc1`.

@@ -115,7 +115,7 @@ if command -v dpkg-query >/dev/null 2>&1; then
 fi
 
 CHRONY_VERSION="$("$CHRONYD_BIN" -v)"
-echo "[1/11] Verified Chrony installation: $CHRONY_VERSION"
+echo "Verified Chrony installation: $CHRONY_VERSION"
 
 echo "[2/11] Configuring NetworkManager to use resolvconf"
 NETWORKMANAGER_CONFIG="/etc/NetworkManager/NetworkManager.conf"
