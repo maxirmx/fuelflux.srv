@@ -3,6 +3,7 @@ set -euo pipefail
 
 readonly I2C_BUS="3"
 readonly I2C_ADDRESS="0x68"
+readonly I2C_BUS_DEVICE="/dev/i2c-${I2C_BUS}"
 readonly I2C_DEVICE_PATH="/sys/bus/i2c/devices/${I2C_BUS}-0068"
 readonly I2C_NEW_DEVICE_PATH="/sys/class/i2c-adapter/i2c-${I2C_BUS}/new_device"
 readonly RTC_DEVICE="/dev/rtc1"
@@ -27,13 +28,27 @@ HWCLOCK="$(require_command hwclock)"
 LN="$(require_command ln)"
 readonly I2CGET I2CSET HWCLOCK LN
 
+for (( attempt = 1; attempt <= 50; attempt++ )); do
+  [[ -e "$I2C_BUS_DEVICE" ]] && break
+  sleep 0.2
+done
+
+if [[ ! -e "$I2C_BUS_DEVICE" ]]; then
+  echo "ERROR: I2C bus device did not appear within 10 seconds: $I2C_BUS_DEVICE" >&2
+  exit 1
+fi
+
 i2c_force_args=()
 if [[ -e "$I2C_DEVICE_PATH" ]]; then
   # A bound kernel driver owns the address, so i2c-tools requires --force.
   i2c_force_args=(-f)
 fi
 
-rtc_seconds="$("$I2CGET" "${i2c_force_args[@]}" -y "$I2C_BUS" "$I2C_ADDRESS" 0x00)"
+if ! rtc_seconds="$("$I2CGET" "${i2c_force_args[@]}" -y "$I2C_BUS" "$I2C_ADDRESS" 0x00)"; then
+  echo "ERROR: Failed to read DS1307 register 0x00 on $I2C_BUS_DEVICE at address $I2C_ADDRESS" >&2
+  exit 1
+fi
+
 if [[ ! "$rtc_seconds" =~ ^0x[[:xdigit:]]{2}$ ]]; then
   echo "ERROR: Unexpected DS1307 seconds register value: $rtc_seconds" >&2
   exit 1

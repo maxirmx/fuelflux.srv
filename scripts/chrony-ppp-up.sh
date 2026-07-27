@@ -7,6 +7,16 @@ set -eu
 
 PPP_INTERFACE="$1"
 
+if ! command -v ip >/dev/null 2>&1; then
+  echo "chrony-ppp: ip command not found" >&2
+  exit 1
+fi
+
+if ! command -v systemctl >/dev/null 2>&1; then
+  echo "chrony-ppp: systemctl command not found" >&2
+  exit 1
+fi
+
 # Keep these endpoints reachable through SIM800 and restart Chrony after the
 # PPP-specific routes are available.
 ip -4 route replace 77.88.8.88 dev "$PPP_INTERFACE"

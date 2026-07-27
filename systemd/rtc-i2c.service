@@ -1,5 +1,7 @@
 [Unit]
 Description=Bind DS1307 RTC on I2C bus 3
+# The setup helper waits for /dev/i2c-3 because i2c-dev adapters are not
+# guaranteed to have the udev tag required for a systemd device dependency.
 After=dev-i2c\x2d3.device
 
 [Service]
