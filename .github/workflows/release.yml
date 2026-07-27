@@ -40,11 +40,15 @@ jobs:
           install -Dm755 install.sh "$BUNDLE_DIR/install.sh"
           install -Dm644 README.md "$BUNDLE_DIR/README.md"
           install -Dm644 LICENSE "$BUNDLE_DIR/LICENSE"
+          install -Dm644 chrony/chrony.conf "$BUNDLE_DIR/chrony/chrony.conf"
           install -Dm644 systemd/sim800.service "$BUNDLE_DIR/systemd/sim800.service"
           install -Dm644 systemd/autossh-ppp.service "$BUNDLE_DIR/systemd/autossh-ppp.service"
           install -Dm644 systemd/gsm-watchdog.service "$BUNDLE_DIR/systemd/gsm-watchdog.service"
           install -Dm644 systemd/gsm-watchdog.timer "$BUNDLE_DIR/systemd/gsm-watchdog.timer"
           install -Dm644 systemd/rtc-i2c.service "$BUNDLE_DIR/systemd/rtc-i2c.service"
+          install -Dm644 systemd/chrony.service.d/10-rtc-i2c.conf "$BUNDLE_DIR/systemd/chrony.service.d/10-rtc-i2c.conf"
+          install -Dm755 scripts/chrony-ppp-down.sh "$BUNDLE_DIR/scripts/chrony-ppp-down.sh"
+          install -Dm755 scripts/chrony-ppp-up.sh "$BUNDLE_DIR/scripts/chrony-ppp-up.sh"
           install -Dm755 scripts/gsm-watchdog.sh "$BUNDLE_DIR/scripts/gsm-watchdog.sh"
           install -Dm755 scripts/rtc-i2c-setup.sh "$BUNDLE_DIR/scripts/rtc-i2c-setup.sh"
           install -Dm755 scripts/sim800-route-down.sh "$BUNDLE_DIR/scripts/sim800-route-down.sh"
@@ -60,6 +64,8 @@ jobs:
           set -euo pipefail
           tar -tzf "$BUNDLE_NAME"
           tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/install.sh" | bash -n
+          tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/chrony-ppp-down.sh" | sh -n
+          tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/chrony-ppp-up.sh" | sh -n
           tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/rtc-i2c-setup.sh" | bash -n
           tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/sim800-route-down.sh" | sh -n
           tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/sim800-route-up.sh" | sh -n
