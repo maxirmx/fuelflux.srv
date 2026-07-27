@@ -19,6 +19,18 @@ This bundle installs two systemd services to enforce the startup sequence:
   Installs dependencies, configures DNS resolution, copies units and the
   watchdog script, applies tunnel settings, and enables and starts services.
 
+## Network priority
+
+The SIM800 connection installs its IPv4 default route with metric `700`.
+NetworkManager normally gives Wi-Fi routes metric `600`, so `wlan0` is used
+while Wi-Fi is connected and `ppp0` remains available as the fallback.
+
+The peer configuration does not use `replacedefaultroute`, so it never removes
+the Wi-Fi route. The installer also places compatibility hooks at
+`/etc/ppp/ip-{up,down}.d/90-sim800-route`; these let Debian/Armbian systems
+with `pppd` 2.4.x keep the metric-700 PPP route alongside an existing Wi-Fi
+default route and remove it cleanly when PPP disconnects.
+
 ## Prerequisites
 
 - Installer writes peer file to: `/etc/ppp/peers/sim800`
@@ -167,6 +179,7 @@ journalctl -u gsm-watchdog.timer -b
 journalctl -u sim800 -b
 journalctl -u autossh-ppp -b
 ip addr show ppp0
+ip -4 route show default
 ```
 
 ## If you previously used /etc/rc.local
@@ -180,6 +193,8 @@ Remove or comment out `pppd call sim800 &` to avoid duplicate `pppd` instances.
 - `systemd/gsm-watchdog.service`
 - `systemd/gsm-watchdog.timer`
 - `scripts/gsm-watchdog.sh`
+- `scripts/sim800-route-down.sh`
+- `scripts/sim800-route-up.sh`
 - `ppp/peers/sim800.template`
 - `ppp/chatscripts/sim800.template`
 - `install.sh`
