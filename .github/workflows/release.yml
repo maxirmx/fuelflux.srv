@@ -51,8 +51,6 @@ jobs:
           install -Dm755 scripts/chrony-ppp-up.sh "$BUNDLE_DIR/scripts/chrony-ppp-up.sh"
           install -Dm755 scripts/gsm-watchdog.sh "$BUNDLE_DIR/scripts/gsm-watchdog.sh"
           install -Dm755 scripts/rtc-i2c-setup.sh "$BUNDLE_DIR/scripts/rtc-i2c-setup.sh"
-          install -Dm755 scripts/sim800-route-down.sh "$BUNDLE_DIR/scripts/sim800-route-down.sh"
-          install -Dm755 scripts/sim800-route-up.sh "$BUNDLE_DIR/scripts/sim800-route-up.sh"
           install -Dm644 ppp/peers/sim800.template "$BUNDLE_DIR/ppp/peers/sim800.template"
           install -Dm644 ppp/chatscripts/sim800.template "$BUNDLE_DIR/ppp/chatscripts/sim800.template"
 
@@ -67,8 +65,6 @@ jobs:
           tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/chrony-ppp-down.sh" | sh -n
           tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/chrony-ppp-up.sh" | sh -n
           tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/rtc-i2c-setup.sh" | bash -n
-          tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/sim800-route-down.sh" | sh -n
-          tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/sim800-route-up.sh" | sh -n
 
       - name: Create GitHub release
         env:

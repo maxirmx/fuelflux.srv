@@ -15,11 +15,8 @@ lock
 
 # routing
 defaultroute
-# NetworkManager normally assigns Wi-Fi a metric of 600. Keep PPP at a
-# higher metric so wlan0 is preferred while both links are available.
-# Keep this value in sync with scripts/sim800-route-up.sh.
-defaultroute-metric 700
 usepeerdns
+replacedefaultroute
 ipparam sim800
 
 # resilience

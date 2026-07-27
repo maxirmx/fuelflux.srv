@@ -27,7 +27,6 @@ Example:
 Notes:
 - If you previously used /etc/rc.local to start pppd, disable/remove that line to avoid duplicates.
 - This script installs ppp/peers/sim800.template to /etc/ppp/peers/sim800.
-- This script installs SIM800 route hooks under /etc/ppp/ip-{up,down}.d.
 - This script installs ppp/chatscripts/sim800.template to /etc/chatscripts/sim800.
 - This script installs and enables rtc-i2c.service for a DS1307 on I2C bus 3.
 - This script installs Chrony configuration and orders Chrony after RTC setup.
@@ -237,10 +236,12 @@ install -m 0755 "scripts/rtc-i2c-setup.sh" "/usr/local/bin/rtc-i2c-setup.sh"
 echo "[5/11] Installing PPP configuration"
 install -d "/etc/ppp/peers" "/etc/ppp/ip-up.d" "/etc/ppp/ip-down.d"
 install -m 0644 "ppp/peers/sim800.template" "/etc/ppp/peers/sim800"
+# Remove metric-based route hooks installed by versions that kept WLAN as the
+# preferred default route. pppd now manages the default route itself.
+rm -f "/etc/ppp/ip-up.d/90-sim800-route" \
+  "/etc/ppp/ip-down.d/90-sim800-route"
 install -m 0755 "scripts/chrony-ppp-up.sh" "/etc/ppp/ip-up.d/10-chrony"
 install -m 0755 "scripts/chrony-ppp-down.sh" "/etc/ppp/ip-down.d/10-chrony"
-install -m 0755 "scripts/sim800-route-up.sh" "/etc/ppp/ip-up.d/90-sim800-route"
-install -m 0755 "scripts/sim800-route-down.sh" "/etc/ppp/ip-down.d/90-sim800-route"
 
 echo "[6/11] Installing chat and Chrony configuration"
 install -d "/etc/chatscripts" "/etc/chrony"

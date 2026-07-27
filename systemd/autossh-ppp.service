@@ -1,5 +1,6 @@
 [Unit]
 Description=AutoSSH tunnel to kreel0
+StartLimitIntervalSec=0
 After=sim800.service
 Requires=sim800.service
 BindsTo=sim800.service
@@ -28,7 +29,6 @@ ExecStart=/usr/bin/autossh -M 0 -N \
 
 Restart=always
 RestartSec=10
-StartLimitIntervalSec=0
 
 StandardOutput=journal
 StandardError=journal
