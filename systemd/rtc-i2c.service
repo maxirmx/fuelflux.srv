@@ -1,0 +1,11 @@
+[Unit]
+Description=Bind DS1307 RTC on I2C bus 3
+After=dev-i2c\x2d3.device
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/rtc-i2c-setup.sh
+
+[Install]
+WantedBy=multi-user.target

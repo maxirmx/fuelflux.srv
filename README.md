@@ -1,6 +1,6 @@
 # SIM800 PPP -> AutoSSH (systemd) bundle
 
-This bundle installs two systemd services to enforce the startup sequence:
+This bundle installs systemd services for the following startup sequence:
 
 `/dev/ttyS5` → `pppd call sim800` → `autossh` tunnel
 
@@ -15,9 +15,13 @@ This bundle installs two systemd services to enforce the startup sequence:
 - `gsm-watchdog.service` + `gsm-watchdog.timer`  
   Runs every 30 seconds, checks `ppp0` + basic connectivity + modem AT response, and restarts `sim800` after 3 consecutive failures.
 
+- `rtc-i2c.service`
+  Binds a DS1307 at address `0x68` on I2C bus 3 and exposes `/dev/rtc1`
+  as `/dev/rtc`.
+
 - `install.sh`  
   Installs dependencies, configures DNS resolution, copies units and the
-  watchdog script, applies tunnel settings, and enables and starts services.
+  helper scripts, applies tunnel settings, and enables and starts services.
 
 ## Network priority
 
@@ -30,6 +34,23 @@ the Wi-Fi route. The installer also places compatibility hooks at
 `/etc/ppp/ip-{up,down}.d/90-sim800-route`; these let Debian/Armbian systems
 with `pppd` 2.4.x keep the metric-700 PPP route alongside an existing Wi-Fi
 default route and remove it cleanly when PPP disconnects.
+
+## RTC initialization and boot behavior
+
+The installer enables `rtc-i2c.service` and installs `i2c-tools` when needed.
+On the first service start, the setup script:
+
+1. Binds the `ds1307` driver to I2C bus 3 at address `0x68`.
+2. Waits for `/dev/rtc1`.
+3. Reads register `0x00` and checks the clock-halt bit.
+4. If the oscillator is stopped, clears the bit and initializes the RTC from
+   the current system time with `hwclock -w`.
+5. Otherwise, restores system time from the RTC with `hwclock -s`.
+6. Links `/dev/rtc` to `/dev/rtc1`.
+
+This makes initialization safe on the first run: an RTC whose oscillator is
+stopped cannot overwrite the current system time. Later boots restore time
+from the running RTC.
 
 ## Prerequisites
 
@@ -174,12 +195,15 @@ Notes:
 ```bash
 systemctl status sim800
 systemctl status autossh-ppp
+systemctl status rtc-i2c
 journalctl -u gsm-watchdog -b
 journalctl -u gsm-watchdog.timer -b
 journalctl -u sim800 -b
 journalctl -u autossh-ppp -b
+journalctl -u rtc-i2c -b
 ip addr show ppp0
 ip -4 route show default
+hwclock -r -f /dev/rtc1
 ```
 
 ## If you previously used /etc/rc.local
@@ -192,7 +216,9 @@ Remove or comment out `pppd call sim800 &` to avoid duplicate `pppd` instances.
 - `systemd/autossh-ppp.service`
 - `systemd/gsm-watchdog.service`
 - `systemd/gsm-watchdog.timer`
+- `systemd/rtc-i2c.service`
 - `scripts/gsm-watchdog.sh`
+- `scripts/rtc-i2c-setup.sh`
 - `scripts/sim800-route-down.sh`
 - `scripts/sim800-route-up.sh`
 - `ppp/peers/sim800.template`
