@@ -27,6 +27,7 @@ Example:
 Notes:
 - If you previously used /etc/rc.local to start pppd, disable/remove that line to avoid duplicates.
 - This script installs ppp/peers/sim800.template to /etc/ppp/peers/sim800.
+- This script installs SIM800 route hooks under /etc/ppp/ip-{up,down}.d.
 - This script installs ppp/chatscripts/sim800.template to /etc/chatscripts/sim800.
 EOF
 }
@@ -68,6 +69,7 @@ MISSING_PACKAGES=()
 [[ -x /usr/sbin/pppd ]] || MISSING_PACKAGES+=("ppp")
 [[ -x /usr/bin/autossh ]] || MISSING_PACKAGES+=("autossh")
 [[ -x /usr/sbin/resolvconf || -x /sbin/resolvconf ]] || MISSING_PACKAGES+=("resolvconf")
+command -v ip >/dev/null 2>&1 || MISSING_PACKAGES+=("iproute2")
 
 if (( ${#MISSING_PACKAGES[@]} > 0 )); then
   if ! command -v apt-get >/dev/null 2>&1; then
@@ -79,7 +81,7 @@ if (( ${#MISSING_PACKAGES[@]} > 0 )); then
   apt-get update
   DEBIAN_FRONTEND=noninteractive apt-get install -y "${MISSING_PACKAGES[@]}"
 else
-  echo "[1/11] Dependencies already installed (ppp, autossh, resolvconf)"
+  echo "[1/11] Dependencies already installed (ppp, autossh, resolvconf, iproute2)"
 fi
 
 echo "[2/11] Configuring NetworkManager to use resolvconf"
@@ -188,9 +190,11 @@ echo "[4/11] Installing GSM watchdog script"
 install -d "/usr/local/bin"
 install -m 0755 "scripts/gsm-watchdog.sh" "/usr/local/bin/gsm-watchdog.sh"
 
-echo "[5/11] Installing PPP peer file"
-install -d "/etc/ppp/peers"
+echo "[5/11] Installing PPP configuration"
+install -d "/etc/ppp/peers" "/etc/ppp/ip-up.d" "/etc/ppp/ip-down.d"
 install -m 0644 "ppp/peers/sim800.template" "/etc/ppp/peers/sim800"
+install -m 0755 "scripts/sim800-route-up.sh" "/etc/ppp/ip-up.d/90-sim800-route"
+install -m 0755 "scripts/sim800-route-down.sh" "/etc/ppp/ip-down.d/90-sim800-route"
 
 echo "[6/11] Installing chat script"
 install -d "/etc/chatscripts"

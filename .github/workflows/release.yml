@@ -45,6 +45,8 @@ jobs:
           install -Dm644 systemd/gsm-watchdog.service "$BUNDLE_DIR/systemd/gsm-watchdog.service"
           install -Dm644 systemd/gsm-watchdog.timer "$BUNDLE_DIR/systemd/gsm-watchdog.timer"
           install -Dm755 scripts/gsm-watchdog.sh "$BUNDLE_DIR/scripts/gsm-watchdog.sh"
+          install -Dm755 scripts/sim800-route-down.sh "$BUNDLE_DIR/scripts/sim800-route-down.sh"
+          install -Dm755 scripts/sim800-route-up.sh "$BUNDLE_DIR/scripts/sim800-route-up.sh"
           install -Dm644 ppp/peers/sim800.template "$BUNDLE_DIR/ppp/peers/sim800.template"
           install -Dm644 ppp/chatscripts/sim800.template "$BUNDLE_DIR/ppp/chatscripts/sim800.template"
 
@@ -56,6 +58,8 @@ jobs:
           set -euo pipefail
           tar -tzf "$BUNDLE_NAME"
           tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/install.sh" | bash -n
+          tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/sim800-route-down.sh" | sh -n
+          tar -xOf "$BUNDLE_NAME" "$BUNDLE_DIR/scripts/sim800-route-up.sh" | sh -n
 
       - name: Create GitHub release
         env:
